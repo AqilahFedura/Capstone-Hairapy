@@ -1,27 +1,31 @@
 package com.android.capstone.hairapy.ui.main
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.android.capstone.hairapy.R
 import com.android.capstone.hairapy.data.adapter.ArticleAdapter
-import com.android.capstone.hairapy.data.model.Article
 import com.android.capstone.hairapy.databinding.FragmentHomeBinding
+import com.android.capstone.hairapy.ui.ViewModelFactory
 
 class MainFragment: Fragment() {
 
     private lateinit var binding:FragmentHomeBinding
     private val articleAdapter = ArticleAdapter()
 
+    private val viewModel by activityViewModels<MainViewModel> {
+        ViewModelFactory.getInstance(requireContext())
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -29,35 +33,27 @@ class MainFragment: Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.rvArticle.adapter = articleAdapter
-
         binding.rvArticle.apply {
             layoutManager = LinearLayoutManager(activity)
-            setHasFixedSize(true)
             adapter = articleAdapter
         }
 
-        articleAdapter.submitList(getMockData())
+        viewModel.articles()
 
-        binding.tvSeeAll.setOnClickListener {
-            val intent = Intent(requireContext(), ArticleActivity::class.java)
-            startActivity(intent)
+        viewModel.listArticles.observe(viewLifecycleOwner) {
+            articleAdapter.submitList(it)
         }
 
+        viewModel.message.observe(viewLifecycleOwner) {
+            showToast(it)
+        }
+
+        viewModel.isLoading.observe(viewLifecycleOwner) {
+            binding.progressBar.visibility = if (it) View.VISIBLE else View.GONE
+        }
     }
 
-    private fun getMockData(): List<Article> {
-        return listOf(
-            Article("1", "Title", getString(R.string.lorem_ipsum_short), R.drawable.card1 ),
-            Article("2", "Title", getString(R.string.lorem_ipsum_short),R.drawable.card1),
-            Article("3", "Title", getString(R.string.lorem_ipsum_short),R.drawable.card1 ),
-            Article("4", "Title", getString(R.string.lorem_ipsum_short),R.drawable.card1 ),
-        //    Article("5", "Title", getString(R.string.lorem_ipsum_short),"" ),
-         //   Article("6", "Title", getString(R.string.lorem_ipsum_short),"" ),
-         //   Article("7", "Title", getString(R.string.lorem_ipsum_short),"" ),
-
-            )
+    private fun showToast(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
-
-
 }
